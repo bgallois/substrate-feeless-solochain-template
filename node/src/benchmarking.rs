@@ -4,7 +4,7 @@
 
 use crate::service::FullClient;
 
-use runtime::{AccountId, Balance, BalancesCall, SystemCall};
+use runtime::{configs::account_data::CheckRate, AccountId, Balance, BalancesCall, SystemCall};
 use sc_cli::Result;
 use sc_client_api::BlockBackend;
 use solochain_template_runtime as runtime;
@@ -130,8 +130,9 @@ pub fn create_benchmark_extrinsic(
             best_block.saturated_into(),
         )),
         frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
+        CheckRate::<runtime::Runtime>::new(),
         frame_system::CheckWeight::<runtime::Runtime>::new(),
-        pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
+        //pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
         frame_metadata_hash_extension::CheckMetadataHash::<runtime::Runtime>::new(false),
     );
 
@@ -147,6 +148,7 @@ pub fn create_benchmark_extrinsic(
             (),
             (),
             (),
+            //(),
             None,
         ),
     );

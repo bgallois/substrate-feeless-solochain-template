@@ -23,6 +23,6 @@ This repository aims to provide a **fully feeless** Substrate-based blockchain n
 
 ### TODO List
 - [x] Custom `AccountData` and `AccountStore`
-- [ ] Rate limiter transaction extension
+- [x] Rate limiter transaction extension
 - [ ] Length limiter transaction extension
 - [ ] Penalize accounts spamming the chain with failed transactions
