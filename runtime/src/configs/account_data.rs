@@ -1,37 +1,63 @@
+//! # Rate Limiting System with `CheckRate` Transaction Extension
+//!
+//! This module implements a rate-limiting mechanism for Substrate-based blockchains.
+//! It defines a transaction extension (`CheckRate`) that enforces limits on the number of
+//! transactions an account can make in a defined block period.
+//!
+//! ## Overview
+//!
+//! - Accounts are limited to a maximum number of transactions (`MAX_TX_BY_PERIOD`) within
+//!   a specified block duration (`PERIOD`).
+//! - The mechanism tracks transaction rates using the `Rate` struct, stored within the account's
+//!   custom `AccountData`.
+//! - Validation and rate updates occur during the transaction lifecycle (validation, preparation,
+//!   and post-dispatch phases).
+//!
+//! ## Key Concepts
+//!
+//! - **Rate Limiting**: Controlled through the `Rate` struct, which tracks the last processed block
+//!   and the number of transactions since that block.
+//! - **Transaction Extension**: Implemented through the `CheckRate` struct, integrated with the
+//!   Substrate transaction validation pipeline.
+
 use codec::{Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
-use frame_support::pallet_prelude::InvalidTransaction::ExhaustsResources;
-use frame_support::pallet_prelude::InvalidTransaction::UnknownOrigin;
+use frame_support::pallet_prelude::InvalidTransaction::{ExhaustsResources, UnknownOrigin};
 use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::TypeInfo;
-use sp_runtime::traits::DispatchInfoOf;
-use sp_runtime::traits::Dispatchable;
-use sp_runtime::traits::PostDispatchInfoOf;
-use sp_runtime::transaction_validity::TransactionSource;
-use sp_runtime::transaction_validity::TransactionValidityError;
-use sp_runtime::transaction_validity::ValidTransaction;
-use sp_runtime::DispatchError;
-use sp_runtime::DispatchResult;
-use sp_runtime::RuntimeDebug;
-use sp_runtime::SaturatedConversion;
-use sp_runtime::Weight;
-use sp_runtime::{impl_tx_ext_default, traits::TransactionExtension};
+use sp_runtime::{
+    impl_tx_ext_default,
+    traits::{DispatchInfoOf, Dispatchable, PostDispatchInfoOf, TransactionExtension},
+    transaction_validity::{TransactionSource, TransactionValidityError, ValidTransaction},
+    DispatchError, DispatchResult, RuntimeDebug, SaturatedConversion, Weight,
+};
 
+/// Maximum number of transactions allowed per account within the defined period.
 const MAX_TX_BY_PERIOD: u32 = 2;
+
+/// Duration (in blocks) defining the rate-limiting period.
 const PERIOD: u32 = 5;
 
+/// Tracks transaction rates for an account over blocks.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct Rate<BlockNumber> {
+    /// Block number of the last transaction.
     pub last_block: BlockNumber,
+    /// Number of transactions since the last block.
     pub tx_since_last: u32,
 }
 
+/// Custom account data structure with rate limiting.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct AccountData<Balance, BlockNumber> {
+    /// Balance data from the `pallet_balances` module.
     pub balance: pallet_balances::AccountData<Balance>,
+    /// Rate limiter data.
     pub rate: Rate<BlockNumber>,
 }
 
+/// Implements the storage backend for custom account data (same as the default from pallet
+/// balances.
 pub struct AccountStore<T>(PhantomData<T>);
 impl<T> frame_support::traits::StoredMap<T::AccountId, pallet_balances::AccountData<T::Balance>>
     for AccountStore<T>
@@ -69,8 +95,11 @@ where
     }
 }
 
+/// Rate-limiting behavior.
 trait RateLimiter<BlockNumber> {
+    /// Checks if a transaction is allowed for the current block.
     fn is_allowed(&self, b: BlockNumber) -> bool;
+    /// Updates the rate limiter after a transaction.
     fn update_rate(&mut self, b: BlockNumber);
 }
 
@@ -94,6 +123,7 @@ where
     }
 }
 
+/// A transaction extension for rate limiting.
 #[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 pub struct CheckRate<T: frame_system::Config + Send + Sync>(PhantomData<T>);
@@ -138,15 +168,20 @@ impl<T: frame_system::Config + Send + Sync> CheckRate<T> {
     }
 }
 
-impl<T: frame_system::Config + Send + Sync> TransactionExtension<T::RuntimeCall> for CheckRate<T>
+impl<T> TransactionExtension<T::RuntimeCall> for CheckRate<T>
 where
+    T: frame_system::Config + Send + Sync,
     T::AccountData: RateLimiter<BlockNumberFor<T>>,
 {
-    const IDENTIFIER: &'static str = "CheckRate";
     type Implicit = ();
     type Pre = Pre<T>;
     type Val = Pre<T>;
 
+    const IDENTIFIER: &'static str = "CheckRate";
+
+    impl_tx_ext_default!(T::RuntimeCall; weight);
+
+    /// Validates a transaction based on rate limits.
     fn validate(
         &self,
         origin: <T::RuntimeCall as Dispatchable>::RuntimeOrigin,
@@ -176,6 +211,7 @@ where
         }
     }
 
+    /// Prepares data for post-dispatch processing.
     fn prepare(
         self,
         val: Self::Val,
@@ -187,6 +223,7 @@ where
         Ok(val)
     }
 
+    /// Updates rate limits after transaction execution.
     fn post_dispatch_details(
         pre: Self::Pre,
         _info: &DispatchInfoOf<T::RuntimeCall>,
@@ -200,6 +237,4 @@ where
         frame_system::Account::<T>::mutate(pre.who, |account| account.data = account_data);
         Ok(Weight::zero())
     }
-
-    impl_tx_ext_default!(T::RuntimeCall; weight);
 }

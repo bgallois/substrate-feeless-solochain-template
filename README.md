@@ -16,13 +16,10 @@ This repository aims to provide a **fully feeless** Substrate-based blockchain n
 2. **Per-Account Rate Limiting**  
    While all transactions are free, each account is subject to a **rate limiter**. This limiter enforces a maximum number of free transactions per block, ensuring that no single account or a group of accounts can overload the network with excessive transaction requests. ⏳🔒
 
-3. **Spam Mitigation for Failed Transactions**  
-    Currently, the system determines if free transactions are still available based on a database read. Accounts spamming the chain with failed transactions should eventually incur fees as a penalty for abuse. 🚫🛑
-
 ---
 
 ### TODO List
 - [x] Custom `AccountData` and `AccountStore`
 - [x] Rate limiter transaction extension
 - [ ] Length limiter transaction extension
-- [ ] Penalize accounts spamming the chain with failed transactions
+- [ ] Package in one standalone pallet

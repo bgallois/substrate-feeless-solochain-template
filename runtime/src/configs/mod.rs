@@ -67,76 +67,74 @@ parameter_types! {
 /// but overridden as needed.
 #[derive_impl(frame_system::config_preludes::SolochainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    /// The block type for the runtime.
-    type Block = Block;
-    /// Block & extrinsics weights: base values and limits.
-    type BlockWeights = RuntimeBlockWeights;
-    /// The maximum length of a block (in bytes).
-    type BlockLength = RuntimeBlockLength;
-    /// The identifier used to distinguish between accounts.
-    type AccountId = AccountId;
-    /// The type for storing how many extrinsics an account has signed.
-    type Nonce = Nonce;
-    /// The type for hashing blocks and tries.
-    type Hash = Hash;
-    /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-    type BlockHashCount = BlockHashCount;
-    /// The weight of database operations that the runtime can invoke.
-    type DbWeight = RocksDbWeight;
-    /// Version of the runtime.
-    type Version = Version;
     /// The data to be stored in an account.
     type AccountData = account_data::AccountData<Balance, BlockNumber>;
+    /// The identifier used to distinguish between accounts.
+    type AccountId = AccountId;
+    /// The block type for the runtime.
+    type Block = Block;
+    /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
+    type BlockHashCount = BlockHashCount;
+    /// The maximum length of a block (in bytes).
+    type BlockLength = RuntimeBlockLength;
+    /// Block & extrinsics weights: base values and limits.
+    type BlockWeights = RuntimeBlockWeights;
+    /// The weight of database operations that the runtime can invoke.
+    type DbWeight = RocksDbWeight;
+    /// The type for hashing blocks and tries.
+    type Hash = Hash;
+    type MaxConsumers = frame_support::traits::ConstU32<16>;
+    /// The type for storing how many extrinsics an account has signed.
+    type Nonce = Nonce;
     /// This is used as an identifier of the chain. 42 is the generic substrate prefix.
     type SS58Prefix = SS58Prefix;
-    type MaxConsumers = frame_support::traits::ConstU32<16>;
+    /// Version of the runtime.
+    type Version = Version;
 }
 
 impl pallet_aura::Config for Runtime {
+    type AllowMultipleBlocksPerSlot = ConstBool<false>;
     type AuthorityId = AuraId;
     type DisabledValidators = ();
     type MaxAuthorities = ConstU32<32>;
-    type AllowMultipleBlocksPerSlot = ConstBool<false>;
     type SlotDuration = pallet_aura::MinimumPeriodTimesTwo<Runtime>;
 }
 
 impl pallet_grandpa::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-
-    type WeightInfo = ();
+    type EquivocationReportSystem = ();
+    type KeyOwnerProof = sp_core::Void;
     type MaxAuthorities = ConstU32<32>;
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = ConstU64<0>;
-
-    type KeyOwnerProof = sp_core::Void;
-    type EquivocationReportSystem = ();
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
+    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
     type OnTimestampSet = Aura;
-    type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
     type WeightInfo = ();
 }
 
 impl pallet_balances::Config for Runtime {
+    type AccountStore = account_data::AccountStore<Runtime>;
+    /// The type for recording an account's balance.
+    type Balance = Balance;
+    type DoneSlashHandler = ();
+    type DustRemoval = ();
+    type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
+    type FreezeIdentifier = RuntimeFreezeReason;
+    type MaxFreezes = VariantCountOf<RuntimeFreezeReason>;
     type MaxLocks = ConstU32<50>;
     type MaxReserves = ();
     type ReserveIdentifier = [u8; 8];
-    /// The type for recording an account's balance.
-    type Balance = Balance;
     /// The ubiquitous event type.
     type RuntimeEvent = RuntimeEvent;
-    type DustRemoval = ();
-    type ExistentialDeposit = ConstU128<EXISTENTIAL_DEPOSIT>;
-    type AccountStore = account_data::AccountStore<Runtime>;
-    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
-    type FreezeIdentifier = RuntimeFreezeReason;
-    type MaxFreezes = VariantCountOf<RuntimeFreezeReason>;
-    type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
-    type DoneSlashHandler = ();
+    type RuntimeHoldReason = RuntimeHoldReason;
+    type WeightInfo = pallet_balances::weights::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -144,18 +142,18 @@ parameter_types! {
 }
 
 impl pallet_transaction_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
+    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type LengthToFee = IdentityFee<Balance>;
     type OnChargeTransaction = FungibleAdapter<Balances, ()>;
     type OperationalFeeMultiplier = ConstU8<5>;
-    type WeightToFee = IdentityFee<Balance>;
-    type LengthToFee = IdentityFee<Balance>;
-    type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_transaction_payment::weights::SubstrateWeight<Runtime>;
+    type WeightToFee = IdentityFee<Balance>;
 }
 
 impl pallet_sudo::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_sudo::weights::SubstrateWeight<Runtime>;
 }
 
