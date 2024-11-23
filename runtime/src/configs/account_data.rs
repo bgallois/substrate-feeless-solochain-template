@@ -2,14 +2,10 @@ use codec::{Decode, Encode, MaxEncodedLen};
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::InvalidTransaction::ExhaustsResources;
 use frame_support::pallet_prelude::InvalidTransaction::UnknownOrigin;
-use frame_support::pallet_prelude::MaybeSerializeDeserialize;
-use frame_support::Parameter;
 use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::TypeInfo;
-use sp_runtime::traits::Debug;
 use sp_runtime::traits::DispatchInfoOf;
 use sp_runtime::traits::Dispatchable;
-use sp_runtime::traits::Member;
 use sp_runtime::traits::PostDispatchInfoOf;
 use sp_runtime::transaction_validity::TransactionSource;
 use sp_runtime::transaction_validity::TransactionValidityError;
@@ -36,39 +32,24 @@ pub struct AccountData<Balance, BlockNumber> {
     pub rate: Rate<BlockNumber>,
 }
 
-pub struct AccountStore<T, AccountId, Balance, BlockNumber>(
-    PhantomData<T>,
-    PhantomData<AccountId>,
-    PhantomData<Balance>,
-    PhantomData<BlockNumber>,
-);
-impl<T, AccountId, Balance, BlockNumber>
-    frame_support::traits::StoredMap<AccountId, pallet_balances::AccountData<Balance>>
-    for AccountStore<T, AccountId, Balance, BlockNumber>
+pub struct AccountStore<T>(PhantomData<T>);
+impl<T> frame_support::traits::StoredMap<T::AccountId, pallet_balances::AccountData<T::Balance>>
+    for AccountStore<T>
 where
-    AccountId: Parameter
-        + Member
-        + MaybeSerializeDeserialize
-        + Debug
-        + sp_runtime::traits::MaybeDisplay
-        + Ord
-        + Into<[u8; 32]>
-        + codec::MaxEncodedLen,
-    Balance: frame_support::traits::tokens::Balance,
-    BlockNumber: sp_runtime::traits::BlockNumber,
-    T: frame_system::Config<AccountId = AccountId, AccountData = AccountData<Balance, BlockNumber>>
-        + pallet_balances::Config<Balance = Balance>,
+    T: frame_system::Config<AccountData = AccountData<T::Balance, BlockNumberFor<T>>>
+        + pallet_balances::Config,
 {
-    fn get(k: &AccountId) -> pallet_balances::AccountData<Balance> {
+    fn get(k: &T::AccountId) -> pallet_balances::AccountData<T::Balance> {
         frame_system::Account::<T>::get(k).data.balance
     }
 
     fn try_mutate_exists<R, E: From<DispatchError>>(
-        k: &AccountId,
-        f: impl FnOnce(&mut Option<pallet_balances::AccountData<Balance>>) -> Result<R, E>,
+        k: &T::AccountId,
+        f: impl FnOnce(&mut Option<pallet_balances::AccountData<T::Balance>>) -> Result<R, E>,
     ) -> Result<R, E> {
         let account = frame_system::Account::<T>::get(k);
-        let is_default = account.data.balance == pallet_balances::AccountData::<Balance>::default();
+        let is_default =
+            account.data.balance == pallet_balances::AccountData::<T::Balance>::default();
         let mut some_data = if is_default {
             None
         } else {
@@ -142,6 +123,12 @@ impl<T: frame_system::Config> core::fmt::Debug for Pre<T> {
     #[cfg(not(feature = "std"))]
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         f.write_str("<wasm:stripped>")
+    }
+}
+
+impl<T: frame_system::Config + Send + Sync> Default for CheckRate<T> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
