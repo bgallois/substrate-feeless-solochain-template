@@ -38,13 +38,11 @@ use sp_consensus_aura::sr25519::AuthorityId as AuraId;
 use sp_runtime::{traits::One, Perbill};
 use sp_version::RuntimeVersion;
 
-pub mod account_data;
-
 // Local module imports
 use super::{
-    AccountId, Aura, Balance, Balances, Block, BlockNumber, Hash, Nonce, PalletInfo, Runtime,
-    RuntimeCall, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin, RuntimeTask,
-    EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION,
+    Account, AccountId, Aura, Balance, Balances, Block, BlockNumber, Hash, Nonce, PalletInfo,
+    Runtime, RuntimeCall, RuntimeEvent, RuntimeFreezeReason, RuntimeHoldReason, RuntimeOrigin,
+    RuntimeTask, EXISTENTIAL_DEPOSIT, SLOT_DURATION, VERSION,
 };
 
 const NORMAL_DISPATCH_RATIO: Perbill = Perbill::from_percent(75);
@@ -68,7 +66,7 @@ parameter_types! {
 #[derive_impl(frame_system::config_preludes::SolochainDefaultConfig)]
 impl frame_system::Config for Runtime {
     /// The data to be stored in an account.
-    type AccountData = account_data::AccountData<Balance, BlockNumber>;
+    type AccountData = pallet_feeless::AccountData<Balance, BlockNumber>;
     /// The identifier used to distinguish between accounts.
     type AccountId = AccountId;
     /// The block type for the runtime.
@@ -118,8 +116,13 @@ impl pallet_timestamp::Config for Runtime {
     type WeightInfo = ();
 }
 
+impl pallet_feeless::Config for Runtime {
+    type MaxTxByPeriod = ConstU32<1>;
+    type Period = ConstU32<5>;
+}
+
 impl pallet_balances::Config for Runtime {
-    type AccountStore = account_data::AccountStore<Runtime>;
+    type AccountStore = Account;
     /// The type for recording an account's balance.
     type Balance = Balance;
     type DoneSlashHandler = ();

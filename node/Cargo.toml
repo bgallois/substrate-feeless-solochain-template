@@ -61,6 +61,7 @@ frame-benchmarking-cli = { workspace = true, default-features = true }
 
 # Local Dependencies
 solochain-template-runtime = { workspace = true }
+pallet-feeless = { workspace = true, default-features = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true, default-features = true }
@@ -73,6 +74,7 @@ runtime-benchmarks = [
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-transaction-payment/runtime-benchmarks",
+	"pallet-feeless/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"solochain-template-runtime/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
@@ -82,6 +84,7 @@ runtime-benchmarks = [
 try-runtime = [
 	"frame-system/try-runtime",
 	"pallet-transaction-payment/try-runtime",
+	"pallet-feeless/try-runtime",
 	"solochain-template-runtime/try-runtime",
 	"sp-runtime/try-runtime",
 ]
