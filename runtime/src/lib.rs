@@ -9,7 +9,6 @@ mod benchmarks;
 pub mod configs;
 
 extern crate alloc;
-use crate::configs::account_data::CheckRate;
 use alloc::vec::Vec;
 use sp_runtime::{
     generic, impl_opaque_keys,
@@ -158,7 +157,7 @@ pub type TxExtension = (
     frame_system::CheckGenesis<Runtime>,
     frame_system::CheckEra<Runtime>,
     frame_system::CheckNonce<Runtime>,
-    CheckRate<Runtime>,
+    pallet_feeless::CheckRate<Runtime>,
     frame_system::CheckWeight<Runtime>,
     //pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
@@ -228,4 +227,7 @@ mod runtime {
     // Include the custom logic from the pallet-template in the runtime.
     #[runtime::pallet_index(7)]
     pub type Template = pallet_template;
+
+    #[runtime::pallet_index(8)]
+    pub type Account = pallet_feeless;
 }

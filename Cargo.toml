@@ -9,6 +9,7 @@ edition = "2021"
 members = [
     "node",
     "pallets/template",
+    "pallets/feeless",
     "runtime",
 ]
 resolver = "2"
@@ -16,6 +17,7 @@ resolver = "2"
 [workspace.dependencies]
 solochain-template-runtime = { path = "./runtime" }
 pallet-template = { path = "./pallets/template", default-features = false }
+pallet-feeless = { path = "./pallets/feeless", default-features = false }
 clap = { version = "4.5.13" }
 frame-benchmarking-cli = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }
 frame-metadata-hash-extension = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }
