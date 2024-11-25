@@ -1,7 +1,7 @@
 use crate::types::RateLimiter;
 use codec::{Decode, Encode};
 use core::marker::PhantomData;
-use frame_support::pallet_prelude::InvalidTransaction::{ExhaustsResources, UnknownOrigin};
+use frame_support::pallet_prelude::InvalidTransaction::ExhaustsResources;
 use scale_info::TypeInfo;
 use sp_runtime::{
     impl_tx_ext_default,
@@ -28,7 +28,7 @@ impl<T: frame_system::Config + Send + Sync> core::fmt::Debug for CheckRate<T> {
 }
 
 pub struct Pre<T: frame_system::Config> {
-    who: T::AccountId,
+    who: Option<T::AccountId>,
 }
 
 impl<T: frame_system::Config> core::fmt::Debug for Pre<T> {
@@ -87,12 +87,19 @@ where
         TransactionValidityError,
     > {
         let Ok(who) = frame_system::ensure_signed(origin.clone()) else {
-            return Err(TransactionValidityError::Invalid(UnknownOrigin));
+            // Inherent
+            return Ok((Default::default(), Pre { who: None }, origin));
         };
         let account_data = frame_system::Account::<T>::get(who.clone()).data;
         let block = frame_system::Pallet::<T>::block_number();
         if account_data.is_allowed(block) {
-            Ok((Default::default(), Pre { who: who.clone() }, origin))
+            Ok((
+                Default::default(),
+                Pre {
+                    who: Some(who.clone()),
+                },
+                origin,
+            ))
         } else {
             Err(TransactionValidityError::Invalid(ExhaustsResources))
         }
@@ -118,10 +125,12 @@ where
         _len: usize,
         _result: &DispatchResult,
     ) -> Result<Weight, TransactionValidityError> {
-        let mut account_data = frame_system::Account::<T>::get(pre.who.clone()).data;
-        let block = frame_system::Pallet::<T>::block_number();
-        account_data.update_rate(block);
-        frame_system::Account::<T>::mutate(pre.who, |account| account.data = account_data);
+        if let Some(who) = pre.who {
+            let mut account_data = frame_system::Account::<T>::get(who.clone()).data;
+            let block = frame_system::Pallet::<T>::block_number();
+            account_data.update_rate(block);
+            frame_system::Account::<T>::mutate(who, |account| account.data = account_data);
+        }
         Ok(Weight::zero())
     }
 }
