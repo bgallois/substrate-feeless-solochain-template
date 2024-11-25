@@ -47,9 +47,20 @@
 ///     frame_system::CheckNonce<Runtime>,
 ///     pallet_feeless::CheckRate<Runtime>, // Add CheckRate for rate-limiting validation
 ///     frame_system::CheckWeight<Runtime>,
-///     // pallet_transaction_payment::ChargeTransactionPayment<Runtime>, // Remove fees
+///     pallet_transaction_payment::ChargeTransactionPayment<Runtime>, // Remove fees
 ///     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 /// );
+///
+///
+/// impl pallet_transaction_payment::Config for Runtime {
+///     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+///     type LengthToFee = IdentityFee<Balance>;
+///     type OnChargeTransaction = FungibleAdapter<Balances, ()>;
+///     type OperationalFeeMultiplier = ConstU8<5>;
+///     type RuntimeEvent = RuntimeEvent;
+///     type WeightInfo = pallet_transaction_payment::weights::SubstrateWeight<Runtime>;
+///     type WeightToFee = frame_support::weights::FixedFee<0, Balance>;
+/// }
 /// ```
 /// This extends the transaction validation with a rate check to ensure the account isn't exceeding its transaction limit.
 ///
@@ -67,7 +78,7 @@
 ///     frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
 ///     pallet_feeless::CheckRate::<runtime::Runtime>::new(),
 ///     frame_system::CheckWeight::<runtime::Runtime>::new(),
-///     // pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
+///     pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
 ///     frame_metadata_hash_extension::CheckMetadataHash::<runtime::Runtime>::new(false),
 /// );
 ///
@@ -83,7 +94,7 @@
 ///         (),
 ///         (),
 ///         (),
-///         // (),
+///         (),
 ///         None,
 ///     ),
 /// );

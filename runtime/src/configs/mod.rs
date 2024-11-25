@@ -25,17 +25,19 @@
 
 // Substrate and Polkadot dependencies
 use frame_support::{
-    derive_impl, parameter_types,
+    derive_impl,
+    pallet_prelude::Zero,
+    parameter_types,
     traits::{ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, VariantCountOf},
     weights::{
         constants::{RocksDbWeight, WEIGHT_REF_TIME_PER_SECOND},
-        IdentityFee, Weight,
+        Weight,
     },
 };
 use frame_system::limits::{BlockLength, BlockWeights};
 use pallet_transaction_payment::{ConstFeeMultiplier, FungibleAdapter, Multiplier};
 use sp_consensus_aura::sr25519::AuthorityId as AuraId;
-use sp_runtime::{traits::One, Perbill};
+use sp_runtime::Perbill;
 use sp_version::RuntimeVersion;
 
 // Local module imports
@@ -141,17 +143,17 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-    pub FeeMultiplier: Multiplier = Multiplier::one();
+    pub FeeMultiplier: Multiplier = Multiplier::zero();
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
-    type LengthToFee = IdentityFee<Balance>;
+    type LengthToFee = frame_support::weights::FixedFee<0, Balance>;
     type OnChargeTransaction = FungibleAdapter<Balances, ()>;
-    type OperationalFeeMultiplier = ConstU8<5>;
+    type OperationalFeeMultiplier = ConstU8<0>;
     type RuntimeEvent = RuntimeEvent;
     type WeightInfo = pallet_transaction_payment::weights::SubstrateWeight<Runtime>;
-    type WeightToFee = IdentityFee<Balance>;
+    type WeightToFee = frame_support::weights::FixedFee<0, Balance>;
 }
 
 impl pallet_sudo::Config for Runtime {
