@@ -122,6 +122,7 @@ impl pallet_feeless::Config for Runtime {
     type MaxSizeByPeriod = ConstU32<128>;
     type MaxTxByPeriod = ConstU32<1>;
     type Period = ConstU32<5>;
+    type WeightInfo = ();
 }
 
 impl pallet_balances::Config for Runtime {

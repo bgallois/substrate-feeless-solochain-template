@@ -87,9 +87,9 @@ where
         TransactionValidityError,
     > {
         let Ok(who) = frame_system::ensure_signed(origin.clone()) else {
-            // Inherent
             return Ok((Default::default(), Pre { who: None }, origin));
         };
+
         let account_data = frame_system::Account::<T>::get(who.clone()).data;
         let block = frame_system::Pallet::<T>::block_number();
         if account_data.is_allowed(block, len as u32) {

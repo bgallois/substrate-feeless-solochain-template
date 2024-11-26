@@ -3,6 +3,13 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+pub enum Status {
+    #[default]
+    Limited,
+    Unlimited,
+}
+
 /// Tracks transaction rates for an account over blocks.
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
 pub struct Rate<BlockNumber> {
@@ -12,6 +19,7 @@ pub struct Rate<BlockNumber> {
     pub tx_since_last: u32,
     /// Size of transactions since the last block.
     pub size_since_last: u32,
+    pub status: Status,
 }
 
 /// Custom account data structure with rate limiting.

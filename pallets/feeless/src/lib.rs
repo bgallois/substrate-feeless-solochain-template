@@ -101,9 +101,17 @@
 /// ```
 ///
 use frame_support::traits::Get;
-use frame_system::pallet_prelude::BlockNumberFor;
+use frame_system::{
+    ensure_root,
+    pallet_prelude::{BlockNumberFor, OriginFor},
+};
 pub use pallet::*;
-use sp_runtime::{DispatchError, SaturatedConversion};
+use sp_runtime::{DispatchError, DispatchResult, SaturatedConversion};
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+pub mod weights;
+pub use weights::*;
 
 #[cfg(test)]
 mod mock;
@@ -132,6 +140,33 @@ pub mod pallet {
         type MaxSizeByPeriod: Get<u32>;
         /// Duration (in blocks) defining the rate-limiting period.
         type Period: Get<u32>;
+        /// A type representing the weights required by the dispatchables of this pallet.
+        type WeightInfo: WeightInfo;
+    }
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T>
+    where
+        T: frame_system::Config<AccountData = AccountData<T::Balance, BlockNumberFor<T>>>
+            + Config
+            + pallet_balances::Config,
+    {
+        #[pallet::call_index(0)]
+        #[pallet::weight(<T as pallet::Config>::WeightInfo::set_status())]
+        pub fn set_status(
+            origin: OriginFor<T>,
+            who: T::AccountId,
+            status: Status,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            frame_system::Account::<T>::mutate_exists(who, |account| {
+                if let Some(ref mut account) = account {
+                    account.data.rate.status = status;
+                }
+            });
+            Ok(())
+        }
     }
 }
 
@@ -180,7 +215,9 @@ where
         + pallet_balances::Config,
 {
     fn is_allowed(&self, b: BlockNumberFor<T>, len: u32) -> bool {
-        if (b - self.rate.last_block).saturated_into::<u32>() < T::Period::get() {
+        if self.rate.status == Status::Unlimited {
+            true
+        } else if (b - self.rate.last_block).saturated_into::<u32>() < T::Period::get() {
             self.rate.tx_since_last < T::MaxTxByPeriod::get()
                 && self.rate.size_since_last.saturating_add(len) < T::MaxSizeByPeriod::get()
         } else {
