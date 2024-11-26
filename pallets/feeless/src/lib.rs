@@ -128,6 +128,8 @@ pub mod pallet {
     pub trait Config: frame_system::Config {
         /// Maximum number of transactions allowed per account within the defined period.
         type MaxTxByPeriod: Get<u32>;
+        /// Maximum size of transactions allowed per account within the defined period.
+        type MaxSizeByPeriod: Get<u32>;
         /// Duration (in blocks) defining the rate-limiting period.
         type Period: Get<u32>;
     }
@@ -177,16 +179,22 @@ where
         + Config
         + pallet_balances::Config,
 {
-    fn is_allowed(&self, b: BlockNumberFor<T>) -> bool {
-        (b - self.rate.last_block).saturated_into::<u32>() >= T::Period::get()
-            || self.rate.tx_since_last < T::MaxTxByPeriod::get()
+    fn is_allowed(&self, b: BlockNumberFor<T>, len: u32) -> bool {
+        if (b - self.rate.last_block).saturated_into::<u32>() < T::Period::get() {
+            self.rate.tx_since_last < T::MaxTxByPeriod::get()
+                && self.rate.size_since_last.saturating_add(len) < T::MaxSizeByPeriod::get()
+        } else {
+            len < T::MaxSizeByPeriod::get()
+        }
     }
 
-    fn update_rate(&mut self, b: BlockNumberFor<T>) {
+    fn update_rate(&mut self, b: BlockNumberFor<T>, len: u32) {
         if (b - self.rate.last_block).saturated_into::<u32>() < T::Period::get() {
             self.rate.tx_since_last += 1;
+            self.rate.size_since_last += len;
         } else {
             self.rate.tx_since_last = 1;
+            self.rate.size_since_last = len;
             self.rate.last_block = b;
         }
     }

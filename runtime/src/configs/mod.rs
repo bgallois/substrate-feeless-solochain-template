@@ -119,6 +119,7 @@ impl pallet_timestamp::Config for Runtime {
 }
 
 impl pallet_feeless::Config for Runtime {
+    type MaxSizeByPeriod = ConstU32<128>;
     type MaxTxByPeriod = ConstU32<1>;
     type Period = ConstU32<5>;
 }

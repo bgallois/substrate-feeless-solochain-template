@@ -47,11 +47,13 @@ impl pallet_balances::Config for Test {
 }
 
 parameter_types! {
-    pub const MaxTxByPeriod: u32 = 2;
+    pub const MaxTxByPeriod: u32 = 5;
+    pub const MaxSizeByPeriod: u32 = 40;
     pub const Period: u32 = 10;
 }
 
 impl pallet::Config for Test {
+    type MaxSizeByPeriod = MaxSizeByPeriod;
     type MaxTxByPeriod = MaxTxByPeriod;
     type Period = Period;
 }

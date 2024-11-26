@@ -10,6 +10,8 @@ pub struct Rate<BlockNumber> {
     pub last_block: BlockNumber,
     /// Number of transactions since the last block.
     pub tx_since_last: u32,
+    /// Size of transactions since the last block.
+    pub size_since_last: u32,
 }
 
 /// Custom account data structure with rate limiting.
@@ -24,7 +26,7 @@ pub struct AccountData<Balance, BlockNumber> {
 /// Rate-limiting behavior.
 pub trait RateLimiter<T: frame_system::Config> {
     /// Checks if a transaction is allowed for the current block.
-    fn is_allowed(&self, b: BlockNumberFor<T>) -> bool;
+    fn is_allowed(&self, b: BlockNumberFor<T>, size: u32) -> bool;
     /// Updates the rate limiter after a transaction.
-    fn update_rate(&mut self, b: BlockNumberFor<T>);
+    fn update_rate(&mut self, b: BlockNumberFor<T>, size: u32);
 }

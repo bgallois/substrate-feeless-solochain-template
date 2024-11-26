@@ -74,7 +74,7 @@ where
         origin: <T::RuntimeCall as Dispatchable>::RuntimeOrigin,
         _call: &T::RuntimeCall,
         _info: &DispatchInfoOf<T::RuntimeCall>,
-        _len: usize,
+        len: usize,
         _: (),
         _implication: &impl Encode,
         _source: TransactionSource,
@@ -92,7 +92,7 @@ where
         };
         let account_data = frame_system::Account::<T>::get(who.clone()).data;
         let block = frame_system::Pallet::<T>::block_number();
-        if account_data.is_allowed(block) {
+        if account_data.is_allowed(block, len as u32) {
             Ok((
                 Default::default(),
                 Pre {
@@ -122,13 +122,13 @@ where
         pre: Self::Pre,
         _info: &DispatchInfoOf<T::RuntimeCall>,
         _post_info: &PostDispatchInfoOf<T::RuntimeCall>,
-        _len: usize,
+        len: usize,
         _result: &DispatchResult,
     ) -> Result<Weight, TransactionValidityError> {
         if let Some(who) = pre.who {
             let mut account_data = frame_system::Account::<T>::get(who.clone()).data;
             let block = frame_system::Pallet::<T>::block_number();
-            account_data.update_rate(block);
+            account_data.update_rate(block, len as u32);
             frame_system::Account::<T>::mutate(who, |account| account.data = account_data);
         }
         Ok(Weight::zero())
