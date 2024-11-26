@@ -25,6 +25,7 @@ frame-system = { git = "https://github.com/paritytech/polkadot-sdk", branch = "m
 futures = { version = "0.3.31" }
 jsonrpsee = { version = "0.24.3" }
 pallet-transaction-payment = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }
+pallet-utility = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }
 pallet-transaction-payment-rpc = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }
 sc-basic-authorship = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }
 sc-cli = { git = "https://github.com/paritytech/polkadot-sdk", branch = "master", default-features = false }

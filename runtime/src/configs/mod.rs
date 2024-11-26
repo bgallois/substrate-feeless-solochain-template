@@ -156,6 +156,13 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = frame_support::weights::FixedFee<0, Balance>;
 }
 
+impl pallet_utility::Config for Runtime {
+    type PalletsOrigin = crate::OriginCaller;
+    type RuntimeCall = RuntimeCall;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = pallet_utility::weights::SubstrateWeight<Runtime>;
+}
+
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;

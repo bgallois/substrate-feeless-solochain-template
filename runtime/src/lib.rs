@@ -230,4 +230,7 @@ mod runtime {
 
     #[runtime::pallet_index(8)]
     pub type Account = pallet_feeless;
+
+    #[runtime::pallet_index(9)]
+    pub type Utility = pallet_utility;
 }

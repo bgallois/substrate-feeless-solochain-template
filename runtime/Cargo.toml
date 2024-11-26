@@ -66,6 +66,7 @@ sp-genesis-builder = { workspace = true }
 # RPC related
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
+pallet-utility = { workspace = true }
 
 # Used for runtime benchmarking
 frame-benchmarking = { optional = true, workspace = true }
@@ -94,6 +95,7 @@ std = [
 	"pallet-balances/std",
 	"pallet-grandpa/std",
 	"pallet-sudo/std",
+	"pallet-utility/std",
 	"pallet-template/std",
 	"pallet-feeless/std",
 	"pallet-timestamp/std",
@@ -126,6 +128,7 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
+	"pallet-utility/runtime-benchmarks",
 	"pallet-template/runtime-benchmarks",
 	"pallet-feeless/runtime-benchmarks",
 	"pallet-feeless/runtime-benchmarks",
@@ -143,6 +146,7 @@ try-runtime = [
 	"pallet-balances/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-sudo/try-runtime",
+	"pallet-utility/try-runtime",
 	"pallet-template/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-transaction-payment/try-runtime",
