@@ -1,105 +1,142 @@
+// GNU General Public License (GPL)
+// Version 3, 29 June 2007
+// http://www.gnu.org/licenses/gpl-3.0.html
+//
+// Copyright 2024 Benjamin Gallois
+//
+// Licensed under the GNU General Public License, Version 3 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.gnu.org/licenses/gpl-3.0.html
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// You may not distribute modified versions of the software without providing
+// the source code, and any derivative works must be licensed under the GPL
+// License as well. This ensures that the software remains free and open
+// for all users.
+//
+// You should have received a copy of the GPL along with this program.
+// If not, see <http://www.gnu.org/licenses/>.
 #![cfg_attr(not(feature = "std"), no_std)]
-
-/// # Rate Limiting System with `CheckRate` Transaction Extension For Feeless Chain
-///
-/// This pallet implements a rate-limiting mechanism for Substrate-based blockchains.
-/// It enforces limits on the number of transactions an account can make within a specified block period.
-///
-/// ## Overview
-///
-/// - Accounts are limited to a maximum number of transactions (`MaxTxByPeriod`) within
-///   a specified block duration (`Period`).
-/// - The mechanism tracks transaction rates using the `Rate` struct, stored within the account's
-///   custom `AccountData`.
-/// - Validation and rate updates occur during the transaction lifecycle (validation, preparation,
-///   and post-dispatch phases).
-///
-/// ## Key Concepts
-///
-/// - **Rate Limiting**: Controlled through the `Rate` struct, which tracks the last processed block
-///   and the number of transactions since that block.
-/// - **Transaction Extension**: Implemented through the `CheckRate` struct, integrated with the
-///   Substrate transaction validation pipeline.
-///
-/// ## Integration into the Runtime
-/// In the runtime configuration, we specify the following settings to enable the rate-limiting mechanism:
-///
-/// ### 1. `AccountData` Definition
-/// ```rust,ignore
-/// type AccountData = pallet_feeless::AccountData<Balance, BlockNumber>;
-/// ```
-/// The `AccountData` struct is used to store the balance, last block, and transaction count for each account.
-///
-/// ### 2. Account Store in `pallet_balances::Config`
-/// ```rust,ignore
-/// type AccountStore = Account;
-/// ```
-///
-/// ### 3. Transaction Extension (`TxExtension`)
-/// In the Runtime (lib.rs):
-/// ```rust,ignore
-/// pub type TxExtension = (
-///     frame_system::CheckNonZeroSender<Runtime>,
-///     frame_system::CheckSpecVersion<Runtime>,
-///     frame_system::CheckTxVersion<Runtime>,
-///     frame_system::CheckGenesis<Runtime>,
-///     frame_system::CheckEra<Runtime>,
-///     frame_system::CheckNonce<Runtime>,
-///     pallet_feeless::CheckRate<Runtime>, // Add CheckRate for rate-limiting validation
-///     frame_system::CheckWeight<Runtime>,
-///     pallet_transaction_payment::ChargeTransactionPayment<Runtime>, // Remove fees
-///     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
-/// );
-///
-///
-/// impl pallet_transaction_payment::Config for Runtime {
-///     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
-///     type LengthToFee = IdentityFee<Balance>;
-///     type OnChargeTransaction = FungibleAdapter<Balances, ()>;
-///     type OperationalFeeMultiplier = ConstU8<5>;
-///     type RuntimeEvent = RuntimeEvent;
-///     type WeightInfo = pallet_transaction_payment::weights::SubstrateWeight<Runtime>;
-///     type WeightToFee = frame_support::weights::FixedFee<0, Balance>;
-/// }
-/// ```
-/// This extends the transaction validation with a rate check to ensure the account isn't exceeding its transaction limit.
-///
-/// In the Node (benchmarkings.rs):
-/// ```rust,ignore
-/// let tx_ext: runtime::TxExtension = (
-///     frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
-///     frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
-///     frame_system::CheckTxVersion::<runtime::Runtime>::new(),
-///     frame_system::CheckGenesis::<runtime::Runtime>::new(),
-///     frame_system::CheckEra::<runtime::Runtime>::from(sp_runtime::generic::Era::mortal(
-///         period,
-///         best_block.saturated_into(),
-///     )),
-///     frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
-///     pallet_feeless::CheckRate::<runtime::Runtime>::new(),
-///     frame_system::CheckWeight::<runtime::Runtime>::new(),
-///     pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
-///     frame_metadata_hash_extension::CheckMetadataHash::<runtime::Runtime>::new(false),
-/// );
-///
-/// let raw_payload = runtime::SignedPayload::from_raw(
-///     call.clone(),
-///     tx_ext.clone(),
-///     (
-///         (),
-///         runtime::VERSION.spec_version,
-///         runtime::VERSION.transaction_version,
-///         genesis_hash,
-///         best_hash,
-///         (),
-///         (),
-///         (),
-///         (),
-///         None,
-///     ),
-/// );
-/// ```
-///
+//! # Rate Limiting System with `CheckRate` Transaction Extension for Feeless Chain
+//!
+//! This pallet implements a rate-limiting mechanism for Substrate-based blockchains.
+//! It enforces limits on the number of transactions an account can make within a specified block period.
+//!
+//! ## Overview
+//!
+//! - Accounts are limited to a maximum number of transactions (`MaxTxByPeriod`), and size in bytes (`MaxSizeByPeriod`) within
+//!   a specified block duration (`Period`).
+//! - The mechanism tracks transaction rates using the `Rate` struct, stored within the account's
+//!   custom `AccountData`.
+//! - Validation and rate updates occur during the transaction lifecycle (validation, preparation,
+//!   and post-dispatch phases).
+//!
+//! ## Key Concepts
+//!
+//! - **Rate Limiting**: Controlled through the `Rate` struct, which tracks the last processed block
+//!   and the number of transactions since that block.
+//! - **Size Limiting**: Controlled through the `Rate` struct, which tracks the last processed block
+//!   and the size of transactions since that block.
+//! - **Transaction Extension**: Implemented through the `CheckRate` struct, integrated with the
+//!   Substrate transaction validation pipeline.
+//!
+//! ## Integration into the Runtime
+//!
+//! To enable the rate-limiting mechanism, the following settings must be configured in the runtime.
+//!
+//! ### 1. `AccountData` Definition
+//! The `AccountData` struct stores the balance, last block, and transaction count for each account.
+//! ```rust,ignore
+//! type AccountData = pallet_feeless::AccountData<Balance, BlockNumber>;
+//! ```
+//!
+//! ### 2. Account Store in `pallet_balances::Config`
+//! The account store configuration is required to track the account's state.
+//! ```rust,ignore
+//! type AccountStore = Account;
+//! ```
+//!
+//! ### 3. `pallet_feeless` Configuration
+//! The runtime configuration for the `pallet_feeless` pallet specifies the transaction limits and period.
+//! ```rust,ignore
+//! impl pallet_feeless::Config for Runtime {
+//!    type MaxTxByPeriod = ConstU32<128>;
+//!    type MaxTxByPeriod = ConstU32<1>;
+//!    type Period = ConstU32<5>;
+//!    type WeightInfo = ();
+//! }
+//! ```
+//!
+//! ### 4. Transaction Extension (`TxExtension`)
+//! In the Runtime (lib.rs):
+//! ```rust,ignore
+//! pub type TxExtension = (
+//!     frame_system::CheckNonZeroSender<Runtime>,
+//!     frame_system::CheckSpecVersion<Runtime>,
+//!     frame_system::CheckTxVersion<Runtime>,
+//!     frame_system::CheckGenesis<Runtime>,
+//!     frame_system::CheckEra<Runtime>,
+//!     frame_system::CheckNonce<Runtime>,
+//!     pallet_feeless::CheckRate<Runtime>, // Add CheckRate for rate-limiting validation
+//!     frame_system::CheckWeight<Runtime>,
+//!     pallet_transaction_payment::ChargeTransactionPayment<Runtime>, // Remove fees
+//!     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+//! );
+//!
+//! impl pallet_transaction_payment::Config for Runtime {
+//!     type FeeMultiplierUpdate = ConstFeeMultiplier<FeeMultiplier>;
+//!     type LengthToFee = IdentityFee<Balance>;
+//!     type OnChargeTransaction = FungibleAdapter<Balances, ()>;
+//!     type OperationalFeeMultiplier = ConstU8<5>;
+//!     type RuntimeEvent = RuntimeEvent;
+//!     type WeightInfo = pallet_transaction_payment::weights::SubstrateWeight<Runtime>;
+//!     type WeightToFee = frame_support::weights::FixedFee<0, Balance>;
+//! }
+//! ```
+//! This extends the transaction validation with a rate check to ensure the account isn't exceeding its transaction limit.
+//!
+//! In the Node (benchmarkings.rs):
+//! ```rust,ignore
+//! let tx_ext: runtime::TxExtension = (
+//!     frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
+//!     frame_system::CheckSpecVersion::<runtime::Runtime>::new(),
+//!     frame_system::CheckTxVersion::<runtime::Runtime>::new(),
+//!     frame_system::CheckGenesis::<runtime::Runtime>::new(),
+//!     frame_system::CheckEra::<runtime::Runtime>::from(sp_runtime::generic::Era::mortal(
+//!         period,
+//!         best_block.saturated_into(),
+//!     )),
+//!     frame_system::CheckNonce::<runtime::Runtime>::from(nonce),
+//!     pallet_feeless::CheckRate::<runtime::Runtime>::new(),
+//!     frame_system::CheckWeight::<runtime::Runtime>::new(),
+//!     pallet_transaction_payment::ChargeTransactionPayment::<runtime::Runtime>::from(0),
+//!     frame_metadata_hash_extension::CheckMetadataHash::<runtime::Runtime>::new(false),
+//! );
+//!
+//! let raw_payload = runtime::SignedPayload::from_raw(
+//!     call.clone(),
+//!     tx_ext.clone(),
+//!     (
+//!         (),
+//!         runtime::VERSION.spec_version,
+//!         runtime::VERSION.transaction_version,
+//!         genesis_hash,
+//!         best_hash,
+//!         (),
+//!         (),
+//!         (),
+//!         (),
+//!         None,
+//!     ),
+//! );
+//! ```
 use frame_support::traits::Get;
 use frame_system::{
     ensure_root,
@@ -151,6 +188,18 @@ pub mod pallet {
             + Config
             + pallet_balances::Config,
     {
+        /// Sets the status of a specific account.
+        ///
+        /// This function allows the root user to update the status of an account.
+        /// It is typically used for management tasks, such as managing account states
+        /// during runtime upgrades or other administrative actions.
+        ///
+        /// The status of the account will be updated to the provided `status` value.
+        ///
+        /// ## Arguments:
+        /// - `origin`: The origin of the transaction (must be the root account).
+        /// - `who`: The `AccountId` of the account whose status is being set.
+        /// - `status`: The new `Status` to assign to the account.
         #[pallet::call_index(0)]
         #[pallet::weight(<T as pallet::Config>::WeightInfo::set_status())]
         pub fn set_status(
