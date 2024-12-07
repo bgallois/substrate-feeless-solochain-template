@@ -1,11 +1,11 @@
 [package]
 name = "pallet-feeless"
 description = ""
-version = "0.0.0"
+version = "0.0.1"
 license = "GPL3"
 authors = ["Benjamin Gallois",]
 repository = "https://github.com/bgallois/substrate-feeless-solochain-template"
-publish = false
+publish = ["pallet-feeless"]
 edition.workspace = true
 
 [package.metadata.docs.rs]

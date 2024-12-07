@@ -81,6 +81,8 @@ impl pallet::Config for Test {
     type MaxSizeByPeriod = MaxSizeByPeriod;
     type MaxTxByPeriod = MaxTxByPeriod;
     type Period = Period;
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
 }
 
 // Build genesis storage according to the mock runtime.

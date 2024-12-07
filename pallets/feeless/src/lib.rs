@@ -70,6 +70,7 @@
 //!    type MaxTxByPeriod = ConstU32<128>;
 //!    type MaxTxByPeriod = ConstU32<1>;
 //!    type Period = ConstU32<5>;
+//!    type RuntimeEvent = RuntimeEvent;
 //!    type WeightInfo = ();
 //! }
 //! ```
@@ -137,7 +138,7 @@
 //!     ),
 //! );
 //! ```
-use frame_support::traits::Get;
+use frame_support::{pallet_prelude::IsType, traits::Get};
 use frame_system::{
     ensure_root,
     pallet_prelude::{BlockNumberFor, OriginFor},
@@ -171,6 +172,8 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// The overarching runtime event type.
+        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Maximum number of transactions allowed per account within the defined period.
         type MaxTxByPeriod: Get<u32>;
         /// Maximum size of transactions allowed per account within the defined period.
@@ -179,6 +182,17 @@ pub mod pallet {
         type Period: Get<u32>;
         /// A type representing the weights required by the dispatchables of this pallet.
         type WeightInfo: WeightInfo;
+    }
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        StatusChanged { who: T::AccountId, status: Status },
+    }
+
+    #[pallet::error]
+    pub enum Error<T> {
+        StatusNotChanged,
     }
 
     #[pallet::call]
@@ -209,12 +223,18 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            frame_system::Account::<T>::mutate_exists(who, |account| {
-                if let Some(ref mut account) = account {
-                    account.data.rate.status = status;
-                }
+            Self::deposit_event(Event::StatusChanged {
+                who: who.clone(),
+                status: status.clone(),
             });
-            Ok(())
+            frame_system::Account::<T>::try_mutate_exists(who.clone(), |account| {
+                if let Some(ref mut account) = account {
+                    account.data.rate.status = status.clone();
+                    Ok(())
+                } else {
+                    Err(Error::<T>::StatusNotChanged.into())
+                }
+            })
         }
     }
 }
@@ -257,12 +277,28 @@ where
     }
 }
 
+/// A rate limiter implementation for managing transaction limits
+/// and data size constraints based on a specified block number period.
+///
+/// This implementation limits the number of transactions and the total
+/// size of transactions that can be processed within a given period. The
+/// rate limiter checks whether the rate limit has been exceeded, and updates
+/// the rate statistics accordingly.
 impl<T> RateLimiter<T> for AccountData<T::Balance, BlockNumberFor<T>>
 where
     T: frame_system::Config<AccountData = AccountData<T::Balance, BlockNumberFor<T>>>
         + Config
         + pallet_balances::Config,
 {
+    /// Determines whether a transaction is allowed based on the current rate
+    /// limiter settings, considering the block number and the transaction size.
+    ///
+    /// # Arguments
+    /// * `b` - The current block number.
+    /// * `len` - The size of the transaction in bytes.
+    ///
+    /// # Returns
+    /// `true` if the transaction is allowed, `false` otherwise.
     fn is_allowed(&self, b: BlockNumberFor<T>, len: u32) -> bool {
         if self.rate.status == Status::Unlimited {
             true
@@ -274,6 +310,17 @@ where
         }
     }
 
+    /// Updates the rate limiter's internal statistics, such as the number of
+    /// transactions and the total data size for the current period, based on
+    /// the current block number and transaction size.
+    ///
+    /// # Arguments
+    /// * `b` - The current block number.
+    /// * `len` - The size of the transaction in bytes.
+    ///
+    /// This method will reset the transaction count and size if the current
+    /// block number exceeds the specified period. Otherwise, it will update
+    /// the transaction count and size based on the new transaction.
     fn update_rate(&mut self, b: BlockNumberFor<T>, len: u32) {
         if (b - self.rate.last_block).saturated_into::<u32>() < T::Period::get() {
             self.rate.tx_since_last += 1;

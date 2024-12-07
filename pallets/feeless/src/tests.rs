@@ -191,10 +191,15 @@ fn transaction_fail_after_quota_but_unsigned() {
 #[test]
 fn set_to_unlimited() {
     new_test_ext().execute_with(|| {
+        System::set_block_number(1);
         Balances::set_balance(&1, 100_000); // Init AccountData
         assert_noop!(
             Feeless::set_status(RuntimeOrigin::signed(1), 1, crate::Status::Unlimited),
             frame_support::error::BadOrigin
+        );
+        assert_err!(
+            Feeless::set_status(RawOrigin::Root.into(), 10_000, crate::Status::Unlimited),
+            crate::Error::<Test>::StatusNotChanged
         );
         assert_eq!(
             frame_system::Account::<Test>::get(1).data.rate.status,
@@ -208,6 +213,13 @@ fn set_to_unlimited() {
         assert_eq!(
             frame_system::Account::<Test>::get(1).data.rate.status,
             crate::Status::Unlimited
+        );
+        System::assert_last_event(
+            crate::Event::StatusChanged {
+                who: 1,
+                status: crate::Status::Unlimited,
+            }
+            .into(),
         );
 
         let info = DispatchInfo::default();
@@ -227,6 +239,17 @@ fn set_to_unlimited() {
             1,
             crate::Status::default()
         ));
+        assert_eq!(
+            frame_system::Account::<Test>::get(1).data.rate.status,
+            crate::Status::Limited
+        );
+        System::assert_last_event(
+            crate::Event::StatusChanged {
+                who: 1,
+                status: crate::Status::Limited,
+            }
+            .into(),
+        );
         assert_err!(
             CheckRate::<Test>::new().test_run(
                 RuntimeOrigin::signed(1),
