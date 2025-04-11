@@ -7,7 +7,6 @@ authors = ["Benjamin Gallois <benjamin@gallois.cc>"]
 homepage = "https://github.com/bgallois/substrate-feeless-solochain-template"
 repository = "https://github.com/bgallois/substrate-feeless-solochain-template"
 documentation = "https://docs.rs/pallet-feeless"
-publish = ["pallet-feeless"]
 keywords = ["Substrate", "Blockchain", "Feeless", "Pallet"]
 edition.workspace = true
 
