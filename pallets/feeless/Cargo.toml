@@ -1,11 +1,14 @@
 [package]
 name = "pallet-feeless"
-description = ""
+description = "A pallet to implement a feeless Substrate blockchain node."
 version = "0.0.1"
-license = "GPL3"
-authors = ["Benjamin Gallois",]
+license = "MIT"
+authors = ["Benjamin Gallois <benjamin@gallois.cc>"]
+homepage = "https://github.com/bgallois/substrate-feeless-solochain-template"
 repository = "https://github.com/bgallois/substrate-feeless-solochain-template"
+documentation = "https://docs.rs/pallet-feeless"
 publish = ["pallet-feeless"]
+keywords = ["Substrate", "Blockchain", "Feeless", "Pallet"]
 edition.workspace = true
 
 [package.metadata.docs.rs]
