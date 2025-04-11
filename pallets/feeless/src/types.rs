@@ -23,12 +23,23 @@
 //
 // You should have received a copy of the GPL along with this program.
 // If not, see <http://www.gnu.org/licenses/>.
-use codec::{Decode, Encode, MaxEncodedLen};
+use codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen};
 use frame_system::pallet_prelude::BlockNumberFor;
 use scale_info::TypeInfo;
 use sp_runtime::RuntimeDebug;
 
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    RuntimeDebug,
+    MaxEncodedLen,
+    TypeInfo,
+)]
 pub enum Status {
     #[default]
     Limited,
@@ -36,7 +47,18 @@ pub enum Status {
 }
 
 /// Tracks transaction rates for an account over blocks.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    RuntimeDebug,
+    MaxEncodedLen,
+    TypeInfo,
+)]
 pub struct Rate<BlockNumber> {
     /// Block number of the last transaction.
     pub last_block: BlockNumber,
@@ -48,7 +70,18 @@ pub struct Rate<BlockNumber> {
 }
 
 /// Custom account data structure with rate limiting.
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, RuntimeDebug, MaxEncodedLen, TypeInfo)]
+#[derive(
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    RuntimeDebug,
+    MaxEncodedLen,
+    TypeInfo,
+)]
 pub struct AccountData<Balance, BlockNumber> {
     /// Balance data from the `pallet_balances` module.
     pub balance: pallet_balances::AccountData<Balance>,

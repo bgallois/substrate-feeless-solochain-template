@@ -24,7 +24,7 @@
 // You should have received a copy of the GPL along with this program.
 // If not, see <http://www.gnu.org/licenses/>.
 use crate::types::RateLimiter;
-use codec::{Decode, Encode};
+use codec::{Decode, DecodeWithMemTracking, Encode};
 use core::marker::PhantomData;
 use frame_support::pallet_prelude::InvalidTransaction::ExhaustsResources;
 use scale_info::TypeInfo;
@@ -36,7 +36,7 @@ use sp_runtime::{
 };
 
 /// A transaction extension for rate limiting.
-#[derive(Encode, Decode, Clone, Eq, PartialEq, TypeInfo)]
+#[derive(Encode, Decode, DecodeWithMemTracking, Clone, Eq, PartialEq, TypeInfo)]
 #[scale_info(skip_type_params(T))]
 pub struct CheckRate<T: frame_system::Config + Send + Sync>(PhantomData<T>);
 
