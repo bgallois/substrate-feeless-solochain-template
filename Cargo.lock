@@ -5948,7 +5948,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-feeless"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",

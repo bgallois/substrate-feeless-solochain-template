@@ -44,7 +44,7 @@ All validation and accounting are performed **before and after dispatch**, with 
 
 ### 1. Define `AccountData` in `frame_system`
 
-```rust
+```rust ignore
 type AccountData = pallet_feeless::AccountData<Balance, BlockNumber>;
 ```
 
@@ -54,7 +54,7 @@ This custom account type stores balance, last block, and rate data per account.
 
 ### 2. Set Up `AccountStore` in `pallet_balances`
 
-```rust
+```ignore
 type AccountStore = Account;
 ```
 
@@ -66,7 +66,7 @@ Required to track the account’s storage location and enable rate tracking.
 
 Add your custom settings in the runtime:
 
-```rust
+```rust ignore
 impl pallet_feeless::Config for Runtime {
     type MaxTxByPeriod = ConstU32<128>;     // Max transactions per period
     type MaxSizeByPeriod = ConstU32<1>;     // Max size in bytes per period
@@ -82,7 +82,7 @@ impl pallet_feeless::Config for Runtime {
 
 Extend the runtime transaction validation to include `CheckRate`:
 
-```rust
+```rust ignore
 pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
@@ -103,7 +103,7 @@ pub type TxExtension = (
 
 In `benchmarking.rs` or similar:
 
-```rust
+```rust ignore
 let tx_ext: runtime::TxExtension = (
     frame_system::CheckNonZeroSender::<runtime::Runtime>::new(),
     frame_system::CheckSpecVersion::<runtime::Runtime>::new(),

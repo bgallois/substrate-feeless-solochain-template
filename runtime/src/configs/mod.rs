@@ -123,6 +123,7 @@ impl pallet_feeless::Config for Runtime {
     type MaxTxByPeriod = ConstU32<1>;
     type Period = ConstU32<5>;
     type RuntimeEvent = RuntimeEvent;
+    type StatusOrigin = frame_system::EnsureRoot<AccountId>;
     type WeightInfo = ();
 }
 

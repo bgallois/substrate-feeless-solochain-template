@@ -25,6 +25,7 @@
 // If not, see <http://www.gnu.org/licenses/>.
 use crate as pallet;
 use frame_support::derive_impl;
+use frame_system::EnsureRoot;
 use sp_runtime::{traits::parameter_types, BuildStorage};
 
 type Balance = u64;
@@ -82,6 +83,7 @@ impl pallet::Config for Test {
     type MaxTxByPeriod = MaxTxByPeriod;
     type Period = Period;
     type RuntimeEvent = RuntimeEvent;
+    type StatusOrigin = EnsureRoot<Self::AccountId>;
     type WeightInfo = ();
 }
 

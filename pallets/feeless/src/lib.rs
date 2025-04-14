@@ -25,11 +25,11 @@
 // If not, see <http://www.gnu.org/licenses/>.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![doc = include_str!("../README.md")]
-use frame_support::{pallet_prelude::IsType, traits::Get};
-use frame_system::{
-    ensure_root,
-    pallet_prelude::{BlockNumberFor, OriginFor},
+use frame_support::{
+    pallet_prelude::{EnsureOrigin, IsType},
+    traits::Get,
 };
+use frame_system::pallet_prelude::{BlockNumberFor, OriginFor};
 pub use pallet::*;
 use sp_runtime::{DispatchError, DispatchResult, SaturatedConversion};
 
@@ -59,6 +59,8 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config: frame_system::Config {
+        /// The origin which may change account status. Root can always do this.
+        type StatusOrigin: EnsureOrigin<Self::RuntimeOrigin>;
         /// The overarching runtime event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
         /// Maximum number of transactions allowed per account within the defined period.
@@ -91,7 +93,7 @@ pub mod pallet {
     {
         /// Sets the status of a specific account.
         ///
-        /// This function allows the root user to update the status of an account.
+        /// This function allows a protected origin to update the status of an account.
         /// It is typically used for management tasks, such as managing account states
         /// during runtime upgrades or other administrative actions.
         ///
@@ -108,7 +110,7 @@ pub mod pallet {
             who: T::AccountId,
             status: Status,
         ) -> DispatchResult {
-            ensure_root(origin)?;
+            T::StatusOrigin::ensure_origin(origin)?;
 
             Self::deposit_event(Event::StatusChanged {
                 who: who.clone(),
